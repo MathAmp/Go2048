@@ -1,4 +1,4 @@
-package Go2048
+package go2048
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-module github.com/MathAmp/Go2048
+module github.com/mathamp/go2048
 
 go 1.19
 
