@@ -10,10 +10,10 @@ func TestFilterZeroIndices(t *testing.T) {
 	t.Log(FilterZeroIndices(ba))
 }
 
-func TestPickNewIndex(t *testing.T) {
+func TestPickOne(t *testing.T) {
 	var ba BlockArray
 
-	t.Log(PickNewIndex(ba))
+	t.Log(PickOne(FilterZeroIndices(ba)))
 }
 
 func TestMakeDefaultBlock(t *testing.T) {
@@ -32,6 +32,17 @@ func TestShiftBlocks(t *testing.T) {
 
 func TestMergeBlocks(t *testing.T) {
 	t.Log(MergeBlocks([]Block{1, 2, 1, 2, 1, 2, 1, 2}))
+}
+
+func TestShiftAndMergeBlocks(t *testing.T) {
+	t.Log(ShiftAndMergeBlocks([]Block{1, 2, 1, 2, 1, 2, 2, 2}))
+}
+
+func TestShiftAndMergeBlockArray(t *testing.T) {
+	ba := BlockArray{}
+	ba[0] = 1
+	ba[1] = 1
+	t.Log(ShiftAndMergeBlockArray(ba, RIGHT))
 }
 
 func newArangeBlockArray() BlockArray {

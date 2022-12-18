@@ -4,6 +4,15 @@ import (
 	"math/rand"
 )
 
+type ShiftDirection int
+
+const (
+	UP ShiftDirection = iota
+	DOWN
+	LEFT
+	RIGHT
+)
+
 func FilterZeroIndices(bs BlockArray) (r []int) {
 	for k, b := range bs {
 		if b == 0 {
@@ -13,9 +22,8 @@ func FilterZeroIndices(bs BlockArray) (r []int) {
 	return r
 }
 
-func PickNewIndex(bs BlockArray) int {
-	zis := FilterZeroIndices(bs)
-	return rand.Intn(len(zis))
+func PickOne(indices []int) int {
+	return indices[rand.Intn(len(indices))]
 }
 
 func MakeDefaultBlock(probFour float64) Block {
@@ -83,6 +91,57 @@ func MergeBlocks(bs []Block) (_ []Block, isChanged bool) {
 	return fillZeros(nbs, len(bs)), isChanged
 }
 
+func ShiftAndMergeBlocks(bs []Block) ([]Block, bool) {
+	bs, isShifted := ShiftBlocks(bs)
+	bs, isMerged := MergeBlocks(bs)
+
+	return bs, isShifted || isMerged
+}
+
+func ShiftAndMergeBlockArray(ba BlockArray, sd ShiftDirection) (nba BlockArray) {
+	sampleFunc := ShiftDirectionToSampleFunc(sd)
+
+	ba = sampleFunc(ba)
+	iba := ba.IterBlocks()
+	inba := nba.IterBlocks()
+	for {
+		vba := iba()
+		vnba := inba()
+		if vba == nil || vnba == nil {
+			nba = sampleFunc(nba)
+			return
+		}
+
+		vba, _ = ShiftAndMergeBlocks(vba)
+		copy(vnba, vba)
+	}
+}
+
+func IsPossibleToShiftAndMerge(ba BlockArray, sd ShiftDirection) (isPossible bool) {
+	sampleFunc := ShiftDirectionToSampleFunc(sd)
+
+	ba = sampleFunc(ba)
+	iba := ba.IterBlocks()
+
+	for {
+		v := iba()
+		if v == nil {
+			return isPossible
+		}
+		_, isChanged := ShiftAndMergeBlocks(v)
+		isPossible = isPossible || isChanged
+	}
+}
+
+func GetPossibleDirections(ba BlockArray) (directions []ShiftDirection) {
+	for _, d := range []ShiftDirection{UP, DOWN, LEFT, RIGHT} {
+		if IsPossibleToShiftAndMerge(ba, d) {
+			directions = append(directions, d)
+		}
+	}
+	return
+}
+
 type SampleFunc func(BlockArray) BlockArray
 
 func SampleRight(ba BlockArray) BlockArray {
@@ -114,4 +173,19 @@ func SampleUp(ba BlockArray) (nba BlockArray) {
 		nba[(BLOCKS_SIZE-x-1)*BLOCKS_SIZE+(BLOCKS_SIZE-y-1)] = v
 	}
 	return
+}
+
+func ShiftDirectionToSampleFunc(sd ShiftDirection) SampleFunc {
+	switch sd {
+	case UP:
+		return SampleDown
+	case DOWN:
+		return SampleUp
+	case RIGHT:
+		return SampleLeft
+	case LEFT:
+		return SampleRight
+	default:
+		panic("Invalid Direction")
+	}
 }
