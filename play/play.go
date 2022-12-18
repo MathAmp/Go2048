@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 
+	"github.com/mathamp/go2048"
 	term "github.com/nsf/termbox-go"
 )
 
+type Command int
+
 const (
-	LEFT int = iota
+	LEFT Command = iota
 	RIGHT
 	UP
 	DOWN
@@ -15,7 +18,7 @@ const (
 	PASS
 )
 
-func detectControl() int {
+func detectControl() Command {
 	switch ev := term.PollEvent(); ev.Type {
 	case term.EventKey:
 		switch ev.Key {
@@ -45,6 +48,31 @@ func detectControl() int {
 	}
 }
 
+func processGame(gs *go2048.GameState, command Command) go2048.StatusCode {
+	switch command {
+	case UP:
+		{
+			return gs.Process(go2048.UP)
+		}
+	case DOWN:
+		{
+			return gs.Process(go2048.DOWN)
+		}
+	case LEFT:
+		{
+			return gs.Process(go2048.LEFT)
+		}
+	case RIGHT:
+		{
+			return gs.Process(go2048.RIGHT)
+		}
+	default:
+		{
+			panic("Invalid Command")
+		}
+	}
+}
+
 func main() {
 	err := term.Init()
 	if err != nil {
@@ -52,15 +80,19 @@ func main() {
 	}
 	defer term.Close()
 
-	ch := make(chan int)
+	ch := make(chan Command)
 	go func() {
 		for {
 			ch <- detectControl()
 		}
 	}()
 
+	gs := go2048.NewGameState()
+	gs.InitRandomBlock()
+
 	for {
 		fmt.Println("Press ESC to quit")
+		fmt.Println(gs.String())
 
 		v := <-ch
 		if v == ESC {
@@ -69,6 +101,12 @@ func main() {
 		if v == PASS {
 			continue
 		}
-		fmt.Println(v)
+
+		if processGame(&gs, v) == go2048.TERMINATED {
+			fmt.Println(gs.String())
+			fmt.Println("Game Over!")
+			<-ch
+			return
+		}
 	}
 }
